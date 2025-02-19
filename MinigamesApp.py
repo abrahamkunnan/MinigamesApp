@@ -1,227 +1,297 @@
 import tkinter as tk
+from tkinter import messagebox
 import random
 
-# Global variables to track scores
-tic_tac_toe_score = {'Player': 0, 'Computer': 0}
-rps_score = {'Player': 0, 'Computer': 0}
-pong_score = {'Player1': 0, 'Player2': 0}
-settings = {'sound': True, 'font_size': 12, 'high_contrast': False}
+# Global variables for settings
+font_size = 10
+high_contrast_mode = False
+sound_effects = True
 
-# Helper function to clear the window
-def clear_window(window):
-    for widget in window.winfo_children():
+# Global variables for scores
+tic_tac_toe_wins = 0
+tic_tac_toe_losses = 0
+rock_paper_scissors_wins = 0
+rock_paper_scissors_losses = 0
+pong_high_score = 0
+
+# Global variables for game states
+current_player = "X"
+board = [""] * 9
+pong_difficulty = 1
+
+# Function to clear the current page
+def clear_page():
+    for widget in root.winfo_children():
         widget.destroy()
 
-# Main menu
-def main_menu(window):
-    clear_window(window)
-    window.title("Minigames App")
+# Function to go back to the home page
+def go_home():
+    clear_page()
+    create_main_menu()
 
-    title_label = tk.Label(window, text="Minigames App", font=("Helvetica", 24))
+# Function to create the main menu
+def create_main_menu():
+    clear_page()
+    title_label = tk.Label(root, text="Minigames App", font=("Arial", 24))
     title_label.pack(pady=20)
 
-    tic_tac_toe_btn = tk.Button(window, text="Tic Tac Toe", command=lambda: tic_tac_toe_game(window), width=20)
-    pong_btn = tk.Button(window, text="Pong", command=lambda: pong_game(window), width=20)
-    rps_btn = tk.Button(window, text="Rock Paper Scissors", command=lambda: rps_game(window), width=20)
-    settings_btn = tk.Button(window, text="Settings", command=lambda: settings_page(window), width=20)
+    tic_tac_toe_button = tk.Button(root, text="Tic Tac Toe", command=open_tic_tac_toe, font=("Arial", 18))
+    tic_tac_toe_button.pack(pady=10)
 
-    tic_tac_toe_btn.pack(pady=5)
-    pong_btn.pack(pady=5)
-    rps_btn.pack(pady=5)
-    settings_btn.pack(pady=5)
+    rock_paper_scissors_button = tk.Button(root, text="Rock Paper Scissors", command=open_rock_paper_scissors, font=("Arial", 18))
+    rock_paper_scissors_button.pack(pady=10)
 
-# Tic Tac Toe Game
-def tic_tac_toe_game(window):
-    clear_window(window)
-    
-    board = ["" for _ in range(9)]
-    current_player = ["X"]
+    pong_button = tk.Button(root, text="Pong", command=open_pong_player_select, font=("Arial", 18))
+    pong_button.pack(pady=10)
 
-    def make_move(button, index):
-        if board[index] == "":
-            board[index] = current_player[0]
-            button.config(text=current_player[0])
-            if check_winner():
-                result_label.config(text=f"Player {current_player[0]} wins!")
-            elif "" not in board:
-                result_label.config(text="It's a draw!")
-            else:
-                current_player[0] = "O" if current_player[0] == "X" else "X"
+    settings_button = tk.Button(root, text="Settings", command=open_settings, font=("Arial", 18))
+    settings_button.pack(pady=10)
 
-    def check_winner():
-        winning_combinations = [(0, 1, 2), (3, 4, 5), (6, 7, 8), (0, 3, 6), (1, 4, 7), (2, 5, 8), (0, 4, 8), (2, 4, 6)]
-        for a, b, c in winning_combinations:
-            if board[a] == board[b] == board[c] != "":
-                return True
-        return False
+# Function to open the Tic Tac Toe game
+def open_tic_tac_toe():
+    clear_page()
+    global current_player, board
+
+    title_label = tk.Label(root, text="Tic Tac Toe", font=("Arial", 24))
+    title_label.pack(pady=20)
+
+    board_frame = tk.Frame(root)
+    board_frame.pack()
 
     buttons = []
     for i in range(9):
-        button = tk.Button(window, text="", font=("Helvetica", 20), width=5, height=2,
-                            command=lambda i=i: make_move(buttons[i], i))
-        buttons.append(button)
+        button = tk.Button(board_frame, text="", font=("Arial", 24), width=5, height=2, command=lambda i=i: make_move(i))
         button.grid(row=i // 3, column=i % 3)
+        buttons.append(button)
 
-    result_label = tk.Label(window, text="")
-    result_label.grid(row=3, column=0, columnspan=3)
+    score_label = tk.Label(root, text=f"Wins: {tic_tac_toe_wins} Losses: {tic_tac_toe_losses}", font=("Arial", 18))
+    score_label.pack(pady=20)
 
-    tk.Button(window, text="Back to Menu", command=lambda: main_menu(window)).grid(row=4, column=0, columnspan=3)
+    back_button = tk.Button(root, text="Back to Home", command=go_home, font=("Arial", 18))
+    back_button.pack(pady=10)
 
-# Pong Game
-def pong_game(window):
-    clear_window(window)
+    def make_move(position):
+        global current_player, board
+        if board[position] == "":
+            board[position] = current_player
+            buttons[position].config(text=current_player)
+            if check_winner():
+                messagebox.showinfo("Game Over", f"{current_player} wins!")
+                update_score(current_player)
+                reset_board()
+            elif "" not in board:
+                messagebox.showinfo("Game Over", "It's a draw!")
+                reset_board()
+            else:
+                current_player = "O" if current_player == "X" else "X"
+                if current_player == "O":
+                    computer_move()
 
-    canvas = tk.Canvas(window, width=400, height=300, bg="black")
-    canvas.pack()
+    def check_winner():
+        winning_combinations = [
+            [0, 1, 2], [3, 4, 5], [6, 7, 8],  # Rows
+            [0, 3, 6], [1, 4, 7], [2, 5, 8],  # Columns
+            [0, 4, 8], [2, 4, 6]              # Diagonals
+        ]
+        for combo in winning_combinations:
+            if board[combo[0]] == board[combo[1]] == board[combo[2]] != "":
+                return True
+        return False
 
-    paddle1 = canvas.create_rectangle(10, 130, 20, 170, fill="white")
-    paddle2 = canvas.create_rectangle(380, 130, 390, 170, fill="white")
-    ball = canvas.create_oval(190, 140, 210, 160, fill="white")
+    def computer_move():
+        available_moves = [i for i, spot in enumerate(board) if spot == ""]
+        if available_moves:
+            move = random.choice(available_moves)
+            board[move] = "O"
+            buttons[move].config(text="O")
+            if check_winner():
+                messagebox.showinfo("Game Over", "Computer wins!")
+                update_score("O")
+                reset_board()
+            elif "" not in board:
+                messagebox.showinfo("Game Over", "It's a draw!")
+                reset_board()
+            else:
+                current_player = "X"
 
-    ball_dx, ball_dy = 3, 3
-    paddle1_dy, paddle2_dy = 0, 0
+    def update_score(winner):
+        global tic_tac_toe_wins, tic_tac_toe_losses
+        if winner == "X":
+            tic_tac_toe_wins += 1
+        elif winner == "O":
+            tic_tac_toe_losses += 1
+        score_label.config(text=f"Wins: {tic_tac_toe_wins} Losses: {tic_tac_toe_losses}")
 
-    def move_paddles():
-        canvas.move(paddle1, 0, paddle1_dy)
-        canvas.move(paddle2, 0, paddle2_dy)
-        window.after(20, move_paddles)
+    def reset_board():
+        global board, current_player
+        board = [""] * 9
+        current_player = "X"
+        for button in buttons:
+            button.config(text="")
 
-    def move_ball():
-        nonlocal ball_dx, ball_dy
-        canvas.move(ball, ball_dx, ball_dy)
-        ball_coords = canvas.coords(ball)
-        paddle1_coords = canvas.coords(paddle1)
-        paddle2_coords = canvas.coords(paddle2)
+# Function to open the Rock Paper Scissors game
+def open_rock_paper_scissors():
+    clear_page()
+    global rock_paper_scissors_wins, rock_paper_scissors_losses
 
-        # Bounce on top and bottom walls
-        if ball_coords[1] <= 0 or ball_coords[3] >= 300:
-            ball_dy *= -1
+    title_label = tk.Label(root, text="Rock Paper Scissors", font=("Arial", 24))
+    title_label.pack(pady=20)
 
-        # Bounce on paddles
-        if (ball_coords[0] <= paddle1_coords[2] and paddle1_coords[1] <= ball_coords[1] <= paddle1_coords[3]) or \
-           (ball_coords[2] >= paddle2_coords[0] and paddle2_coords[1] <= ball_coords[1] <= paddle2_coords[3]):
-            ball_dx *= -1
-
-        # Reset ball if it goes out of bounds
-        if ball_coords[0] <= 0 or ball_coords[2] >= 400:
-            canvas.coords(ball, 190, 140, 210, 160)
-            ball_dx = 3 if ball_coords[0] <= 0 else -3
-
-        window.after(20, move_ball)
-
-    def paddle1_up(event):
-        nonlocal paddle1_dy
-        paddle1_dy = -5
-
-    def paddle1_down(event):
-        nonlocal paddle1_dy
-        paddle1_dy = 5
-
-    def paddle2_up(event):
-        nonlocal paddle2_dy
-        paddle2_dy = -5
-
-    def paddle2_down(event):
-        nonlocal paddle2_dy
-        paddle2_dy = 5
-
-    def stop_paddles(event):
-        nonlocal paddle1_dy, paddle2_dy
-        paddle1_dy = 0
-        paddle2_dy = 0
-
-    window.bind("w", paddle1_up)
-    window.bind("s", paddle1_down)
-    window.bind("<Up>", paddle2_up)
-    window.bind("<Down>", paddle2_down)
-    window.bind("<KeyRelease>", stop_paddles)
-
-    move_paddles()
-    move_ball()
-
-    tk.Button(window, text="Back to Menu", command=lambda: main_menu(window)).pack(pady=20)
-
-# Rock Paper Scissors Game
-def rps_game(window):
-    clear_window(window)
-    tk.Label(window, text="Rock Paper Scissors Game").pack()
-
-    def play_rps(player_choice):
-        choices = ["Rock", "Paper", "Scissors"]
+    def play_game(player_choice):
+        global rock_paper_scissors_wins, rock_paper_scissors_losses
+        choices = ["rock", "paper", "scissors"]
         computer_choice = random.choice(choices)
-        result_label.config(text=f"Computer chose: {computer_choice}")
+        result_label.config(text=f"Computer plays: {computer_choice}")
 
         if player_choice == computer_choice:
-            result = "Draw!"
-        elif (player_choice == "Rock" and computer_choice == "Scissors") or \
-             (player_choice == "Paper" and computer_choice == "Rock") or \
-             (player_choice == "Scissors" and computer_choice == "Paper"):
-            result = "You Win!"
-            rps_score['Player'] += 1
+            result = "It's a draw!"
+        elif (player_choice == "rock" and computer_choice == "scissors") or \
+             (player_choice == "paper" and computer_choice == "rock") or \
+             (player_choice == "scissors" and computer_choice == "paper"):
+            result = "You win!"
+            rock_paper_scissors_wins += 1
         else:
-            result = "You Lose!"
-            rps_score['Computer'] += 1
+            result = "You lose!"
+            rock_paper_scissors_losses += 1
 
-        score_label.config(text=f"Player: {rps_score['Player']} - Computer: {rps_score['Computer']}")
-        outcome_label.config(text=result)
+        result_label.config(text=f"Computer plays: {computer_choice}\n{result}")
+        score_label.config(text=f"Wins: {rock_paper_scissors_wins} Losses: {rock_paper_scissors_losses}")
 
-    tk.Button(window, text="Rock", command=lambda: play_rps("Rock")).pack(pady=5)
-    tk.Button(window, text="Paper", command=lambda: play_rps("Paper")).pack(pady=5)
-    tk.Button(window, text="Scissors", command=lambda: play_rps("Scissors")).pack(pady=5)
+    rock_button = tk.Button(root, text="Rock", command=lambda: play_game("rock"), font=("Arial", 18))
+    rock_button.pack(pady=10)
 
-    result_label = tk.Label(window, text="")
-    result_label.pack()
-    outcome_label = tk.Label(window, text="")
-    outcome_label.pack()
-    score_label = tk.Label(window, text=f"Player: {rps_score['Player']} - Computer: {rps_score['Computer']}")
-    score_label.pack()
+    paper_button = tk.Button(root, text="Paper", command=lambda: play_game("paper"), font=("Arial", 18))
+    paper_button.pack(pady=10)
 
-    tk.Button(window, text="Back to Menu", command=lambda: main_menu(window)).pack(pady=20)
+    scissors_button = tk.Button(root, text="Scissors", command=lambda: play_game("scissors"), font=("Arial", 18))
+    scissors_button.pack(pady=10)
 
-# Settings Page
-def settings_page(window):
-    clear_window(window)
+    result_label = tk.Label(root, text="", font=("Arial", 18))
+    result_label.pack(pady=20)
 
-    def toggle_sound():
-        settings['sound'] = not settings['sound']
-        sound_button.config(text=f"Sound: {'ON' if settings['sound'] else 'OFF'}")
+    score_label = tk.Label(root, text=f"Wins: {rock_paper_scissors_wins} Losses: {rock_paper_scissors_losses}", font=("Arial", 18))
+    score_label.pack(pady=20)
 
-    def toggle_high_contrast():
-        settings['high_contrast'] = not settings['high_contrast']
-        high_contrast_button.config(text=f"High Contrast: {'ON' if settings['high_contrast'] else 'OFF'}")
-        if settings['high_contrast']:
-            window.configure(bg='black')
-        else:
-            window.configure(bg='SystemButtonFace')
+    back_button = tk.Button(root, text="Back to Home", command=go_home, font=("Arial", 18))
+    back_button.pack(pady=10)
+
+# Function to open the Pong player select page
+def open_pong_player_select():
+    clear_page()
+    title_label = tk.Label(root, text="Pong", font=("Arial", 24))
+    title_label.pack(pady=20)
+
+    player_select_label = tk.Label(root, text="How many players will be playing?", font=("Arial", 18))
+    player_select_label.pack(pady=20)
+
+    one_player_button = tk.Button(root, text="1 Player", command=lambda: open_pong_game(1), font=("Arial", 18))
+    one_player_button.pack(pady=10)
+
+    two_player_button = tk.Button(root, text="2 Players", command=lambda: open_pong_game(2), font=("Arial", 18))
+    two_player_button.pack(pady=10)
+
+    back_button = tk.Button(root, text="Back to Home", command=go_home, font=("Arial", 18))
+    back_button.pack(pady=10)
+
+# Function to open the Pong game
+def open_pong_game(players):
+    clear_page()
+    global pong_high_score, pong_difficulty
+
+    title_label = tk.Label(root, text="Pong", font=("Arial", 24))
+    title_label.pack(pady=20)
+
+    canvas = tk.Canvas(root, width=600, height=400, bg="black")
+    canvas.pack()
+
+    paddle_1 = canvas.create_rectangle(50, 150, 60, 250, fill="white")
+    paddle_2 = canvas.create_rectangle(540, 150, 550, 250, fill="white")
+    ball = canvas.create_oval(295, 195, 305, 205, fill="white")
+
+    score_1 = 0
+    score_2 = 0
+
+    score_label = tk.Label(root, text=f"Player 1: {score_1}  Player 2: {score_2}", font=("Arial", 18))
+    score_label.pack(pady=20)
+
+    def update_scores():
+        score_label.config(text=f"Player 1: {score_1}  Player 2: {score_2}")
+
+    def move_paddle_1(event):
+        if event.keysym == "w":
+            canvas.move(paddle_1, 0, -20)
+        elif event.keysym == "s":
+            canvas.move(paddle_1, 0, 20)
+
+    def move_paddle_2(event):
+        if event.keysym == "Up":
+            canvas.move(paddle_2, 0, -20)
+        elif event.keysym == "Down":
+            canvas.move(paddle_2, 0, 20)
+
+    root.bind("<KeyPress>", move_paddle_1)
+    if players == 2:
+        root.bind("<KeyPress>", move_paddle_2)
+
+    back_button = tk.Button(root, text="Back to Home", command=go_home, font=("Arial", 18))
+    back_button.pack(pady=10)
+
+# Function to open the settings page
+def open_settings():
+    clear_page()
+    title_label = tk.Label(root, text="Settings", font=("Arial", 24))
+    title_label.pack(pady=20)
+
+    font_size_label = tk.Label(root, text="Font Size:", font=("Arial", 18))
+    font_size_label.pack(pady=10)
+
+    font_size_entry = tk.Entry(root, font=("Arial", 18))
+    font_size_entry.insert(0, str(font_size))
+    font_size_entry.pack(pady=10)
 
     def update_font_size():
+        global font_size
         try:
-            new_size = int(font_size_entry.get())
-            settings['font_size'] = new_size
-            font_size_label.config(text=f"Font Size: {settings['font_size']}")
+            font_size = int(font_size_entry.get())
+            messagebox.showinfo("Success", "Font size updated!")
         except ValueError:
-            messagebox.showerror("Invalid Input", "Please enter a valid number.")
+            messagebox.showerror("Error", "Please enter a valid number.")
 
-    tk.Label(window, text="Settings Page", font=("Helvetica", 16)).pack(pady=10)
+    font_size_button = tk.Button(root, text="Update Font Size", command=update_font_size, font=("Arial", 18))
+    font_size_button.pack(pady=10)
 
-    sound_button = tk.Button(window, text=f"Sound: {'ON' if settings['sound'] else 'OFF'}", command=toggle_sound)
-    sound_button.pack(pady=5)
+    high_contrast_label = tk.Label(root, text="High Contrast Mode:", font=("Arial", 18))
+    high_contrast_label.pack(pady=10)
 
-    high_contrast_button = tk.Button(window, text=f"High Contrast: {'ON' if settings['high_contrast'] else 'OFF'}", command=toggle_high_contrast)
-    high_contrast_button.pack(pady=5)
+    def toggle_high_contrast():
+        global high_contrast_mode
+        high_contrast_mode = not high_contrast_mode
+        messagebox.showinfo("Success", f"High contrast mode {'enabled' if high_contrast_mode else 'disabled'}.")
 
-    font_size_label = tk.Label(window, text=f"Font Size: {settings['font_size']}")
-    font_size_label.pack(pady=5)
+    high_contrast_button = tk.Button(root, text="Toggle High Contrast", command=toggle_high_contrast, font=("Arial", 18))
+    high_contrast_button.pack(pady=10)
 
-    font_size_entry = tk.Entry(window)
-    font_size_entry.pack(pady=5)
+    sound_effects_label = tk.Label(root, text="Sound Effects:", font=("Arial", 18))
+    sound_effects_label.pack(pady=10)
 
-    tk.Button(window, text="Update Font Size", command=update_font_size).pack(pady=5)
+    def toggle_sound_effects():
+        global sound_effects
+        sound_effects = not sound_effects
+        messagebox.showinfo("Success", f"Sound effects {'enabled' if sound_effects else 'disabled'}.")
 
-    tk.Button(window, text="Back to Menu", command=lambda: main_menu(window)).pack(pady=20)
+    sound_effects_button = tk.Button(root, text="Toggle Sound Effects", command=toggle_sound_effects, font=("Arial", 18))
+    sound_effects_button.pack(pady=10)
 
-# Initialize Tkinter window
-window = tk.Tk()
-window.geometry("400x400")
-main_menu(window)
-window.mainloop()
+    back_button = tk.Button(root, text="Back to Home", command=go_home, font=("Arial", 18))
+    back_button.pack(pady=10)
+
+# Main application window
+root = tk.Tk()
+root.title("Minigames App")
+root.geometry("800x600")
+
+# Start the application with the main menu
+create_main_menu()
+
+# Run the application
+root.mainloop()
